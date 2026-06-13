@@ -1,15 +1,26 @@
+# 1. 안드로이드 스튜디오 & 인텔리제이 설정 (전체 무시)
+/.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+*.iws
+*.ipr
+
+# 2. 빌드 폴더 및 캐시 (가장 용량이 큰 부분)
+/build/
+/app/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+.gradle/
+
+# 3. 로컬 개인 정보 및 설정 파일 (절대 깃허브에 올라가면 안 됨!)
 local.properties
+/local.properties
+
+# 4. 맥/윈도우 OS 생성 찌꺼기 파일
+.DS_Store
+Thumbs.db
+
+# 5. 서명 키 정보 (보안을 위해 절대 공유 금지)
+*.jks
+*.keystore
+
