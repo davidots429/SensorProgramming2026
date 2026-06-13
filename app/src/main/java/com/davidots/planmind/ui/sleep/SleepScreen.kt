@@ -318,11 +318,11 @@ fun SleepScreen(
                     if (isEditingSleepTime) {
                         sleepTimeStr = tempTimeStr
                         sharedPref.edit().putString("sleepTime", tempTimeStr).apply()
-                        AlarmHelper.scheduleDailyAlarm(context, 2001, tempTimeStr, "SLEEP", "취침 알람")
+                        AlarmHelper.scheduleDailyAlarm(context, "SLEEP".hashCode(), tempTimeStr, "SLEEP", "취침 알람")
                     } else {
                         wakeTimeStr = tempTimeStr
                         sharedPref.edit().putString("wakeTime", tempTimeStr).apply()
-                        AlarmHelper.scheduleDailyAlarm(context, 2002, tempTimeStr, "WAKE", "기상 알람")
+                        AlarmHelper.scheduleDailyAlarm(context, "WAKE".hashCode(), tempTimeStr, "WAKE", "기상 알람")
                     }
                     showTimePickerDialog = false
                 }) { Text("확인") }
