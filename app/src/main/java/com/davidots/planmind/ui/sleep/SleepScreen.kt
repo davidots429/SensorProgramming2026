@@ -36,8 +36,10 @@ import kotlinx.coroutines.delay
 fun SleepScreen(
     viewModel: SleepViewModel, // 의존성 주입된 수면 전용 뷰모델
     initialAlarmState: SleepAlarmState = SleepAlarmState.IDLE, // MainActivity의 인텐트로부터 전달받는 초기 상태
+    onNavigateToHome: () -> Unit,
     onNavigateToCalendar: () -> Unit,
-    onNavigateToFocus: () -> Unit
+    onNavigateToFocus: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -179,12 +181,14 @@ fun SleepScreen(
                     Icon(Icons.Default.Menu, "메뉴", tint = MaterialTheme.colorScheme.primary)
                 }
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(text = { Text("일정") }, onClick = { showMenu = false; onNavigateToCalendar() })
-                    DropdownMenuItem(text = { Text("집중 타이머") }, onClick = { showMenu = false; onNavigateToFocus() })
-                    DropdownMenuItem(text = { Text("수면/기상 관리 (현재 화면)") }, onClick = { showMenu = false })
+                    DropdownMenuItem(text = { Text("홈") }, onClick = { showMenu = false; onNavigateToHome() })
+                    DropdownMenuItem(text = { Text("캘린더") }, onClick = { showMenu = false; onNavigateToCalendar() } )
+                    DropdownMenuItem(text = { Text("집중 모드") }, onClick = { showMenu = false; onNavigateToFocus() })
+                    DropdownMenuItem(text = { Text("수면/기상 관리 (현재 화면)") }, onClick = { showMenu = false }, enabled = false)
+                    DropdownMenuItem(text = { Text("설정") }, onClick = { showMenu = false; onNavigateToSettings() })
                 }
             }
-            Text("수면 및 기상", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("수면 및 기상", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.width(48.dp)) // 균형 맞추기용
         }
 
@@ -227,32 +231,32 @@ fun SleepScreen(
                 val isEnoughSleep = SleepTimeUtil.isEnoughSleep(durationMins)
                 val isGoodSleepTime = SleepTimeUtil.isGoodSleepTime(sleepTimeStr)
 
-                Card(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F5F9))) {
+                Card(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("총 수면 예정 시간: ${sleepHours}시간 ${sleepMinsRemaining}분", fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(if (isEnoughSleep) "✅" else "⚠️", modifier = Modifier.padding(end = 8.dp))
-                            Text(text = if (isEnoughSleep) "최소 수면 시간(6시간)을 충족합니다." else "수면 시간이 너무 짧습니다.", color = if (isEnoughSleep) Color.DarkGray else Color.Red, fontSize = 14.sp)
+                            Text(text = if (isEnoughSleep) "최소 수면 시간(6시간)을 충족합니다." else "수면 시간이 너무 짧습니다.", color = if (isEnoughSleep) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error, fontSize = 14.sp)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(if (isGoodSleepTime) "✅" else "⚠️", modifier = Modifier.padding(end = 8.dp))
-                            Text(text = if (isGoodSleepTime) "Deep Sleep이 가능한 적절한 취침 시간입니다." else "새벽 2시 이전 취침을 권장합니다.", color = if (isGoodSleepTime) Color.DarkGray else Color.Red, fontSize = 14.sp)
+                            Text(text = if (isGoodSleepTime) "Deep Sleep이 가능한 적절한 취침 시간입니다." else "새벽 2시 이전 취침을 권장합니다.", color = if (isGoodSleepTime) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error, fontSize = 14.sp)
                         }
                     }
                 }
 
-                Text("최근 수면 기록", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                Text("최근 수면 기록", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(bottom = 8.dp))
 
                 if (recentRecords.isEmpty()) {
-                    Text("아직 기록이 없습니다. 수면 미션을 완료해 보세요!", color = Color.Gray, modifier = Modifier.padding(top = 16.dp))
+                    Text("아직 기록이 없습니다. 수면 미션을 완료해 보세요!", color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(top = 16.dp))
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(recentRecords) { record ->
                             val hrs = record.sleepDurationMins / 60
                             val mins = record.sleepDurationMins % 60
-                            Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC))) {
+                            Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                     Column {
                                         Text(record.date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)

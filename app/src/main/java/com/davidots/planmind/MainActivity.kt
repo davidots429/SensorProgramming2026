@@ -5,6 +5,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.davidots.planmind.data.local.AppDatabase
@@ -16,11 +19,14 @@ import com.davidots.planmind.ui.sleep.SleepViewModel
 import com.davidots.planmind.ui.theme.PlanMindTheme
 import com.davidots.planmind.ui.schedule.ScheduleViewModel
 import com.davidots.planmind.ui.schedule.ScheduleViewModelFactory
+import com.davidots.planmind.ui.settings.AppTheme
+import com.davidots.planmind.ui.settings.SettingsViewModel
 
 
 // 앱 구동 시 가장 먼저 실행되는 Android 진입점(Entry Point)
 // I 렌더링 로직을 가지지 않고, 앱의 생명주기와 데이터베이스, 뷰모델 등의 환경 설정만 담당
 class MainActivity : ComponentActivity() {
+    private val settingsViewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,13 +80,24 @@ class MainActivity : ComponentActivity() {
 
         // 3. Compose UI 그리기 시작
         setContent {
-            PlanMindTheme {
+            // [핵심] 현재 설정된 테마 상태를 실시간 관찰
+            val appTheme by settingsViewModel.theme.collectAsState()
+
+            // 테마 규칙 조건에 따른 최종 다크모드 True/False 결정 연산
+            val useDarkTheme = when (appTheme) {
+                AppTheme.LIGHT -> false
+                AppTheme.DARK -> true
+                AppTheme.SYSTEM -> isSystemInDarkTheme() // 기기 자체 설정을 따름
+            }
+
+            PlanMindTheme(darkTheme = useDarkTheme) {
                 // UI 로직은 모두 MainScreen에 위임하여 Activity를 최대한 가볍게 유지합니다.
                 MainScreen(
                     calendarViewModel = calendarViewModel,
                     focusViewModel = focusViewModel,
                     sleepViewModel = sleepViewModel,
                     scheduleViewModel = scheduleViewModel,
+                    settingsViewModel = settingsViewModel,
                     startDestination = initialRoute,       // 계산된 도착지로 직행
                     initialSleepState = initialSleepState  // 수면 미션 상태 전달
                 )

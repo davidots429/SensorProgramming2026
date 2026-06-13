@@ -81,7 +81,7 @@ fun MonthlyView(
                             text = date.dayOfMonth.toString(),
                             modifier = Modifier.padding(start = 2.dp, top = 2.dp),
                             fontWeight = if (isToday || isCurrentMonth) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isToday) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                            color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                             fontSize = 12.sp
                         )
 

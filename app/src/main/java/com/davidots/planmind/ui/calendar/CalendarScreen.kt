@@ -35,8 +35,10 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel, // 정형화 분리된 전용 캘린더 뷰모델을 의존성 주입받아 사용
+    onNavigateToHome: () -> Unit,
     onNavigateToFocus: () -> Unit,
     onNavigateToSleep: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToDetail: (String, Int?) -> Unit
 ) {
     // 뷰모델 상태 엔진이 방출하는 코어 가변 스트림 현황들을 실시간 결합 관찰(State) 레이어로 확보
@@ -123,9 +125,11 @@ fun CalendarScreen(
                     Icon(Icons.Default.Menu, contentDescription = "메뉴", tint = MaterialTheme.colorScheme.primary)
                 }
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(text = { Text("일정 (현재 화면)") }, onClick = { showMenu = false })
-                    DropdownMenuItem(text = { Text("집중 타이머") }, onClick = { showMenu = false; onNavigateToFocus() })
+                    DropdownMenuItem(text = { Text("홈") }, onClick = { showMenu = false; onNavigateToHome() })
+                    DropdownMenuItem(text = { Text("캘린더 (현재 화면)") }, onClick = { showMenu = false }, enabled = false)
+                    DropdownMenuItem(text = { Text("집중 모드") }, onClick = { showMenu = false; onNavigateToFocus() })
                     DropdownMenuItem(text = { Text("수면/기상 관리") }, onClick = { showMenu = false; onNavigateToSleep() })
+                    DropdownMenuItem(text = { Text("설정") }, onClick = { showMenu = false; onNavigateToSettings() })
                 }
             }
 
@@ -134,7 +138,12 @@ fun CalendarScreen(
                 ViewType.WEEKLY -> "${displayedDate.year}년 ${displayedDate.monthValue}월 ${CalendarUiUtil.getWeekOfMonth(displayedDate)}째 주"
                 ViewType.DAILY -> "${displayedDate.year}년 ${displayedDate.monthValue}월 ${displayedDate.dayOfMonth}일"
             }
-            Text(headerText, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                text = headerText,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
 
             Button(
                 onClick = { viewModel.toggleViewType() },

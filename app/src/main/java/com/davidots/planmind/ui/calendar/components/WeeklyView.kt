@@ -50,7 +50,7 @@ fun WeeklyView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text(text = date.dayOfMonth.toString().padStart(2, '0'), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(text = date.dayOfMonth.toString().padStart(2, '0'), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = CalendarUiUtil.getDayOfWeekString(date.dayOfWeek.value),

@@ -51,8 +51,9 @@ private fun playTimerAlarm(context: Context) {
 fun FocusScreen(
     viewModel: FocusViewModel = viewModel(), // 분리한 뷰모델 주입
     onNavigateToCalendar: () -> Unit,
-    onNavigateToSleep: () -> Unit = {},
-    onNavigateToHome: () -> Unit = {}
+    onNavigateToSleep: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToHome: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -189,12 +190,14 @@ fun FocusScreen(
             Box {
                 IconButton(onClick = { showMenu = true }) { Icon(Icons.Default.Menu, "메뉴", tint = MaterialTheme.colorScheme.primary) }
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(text = { Text("일정") }, onClick = { showMenu = false; navigateWithConfirm(onNavigateToCalendar) })
-                    DropdownMenuItem(text = { Text("집중 타이머 (현재 화면)") }, onClick = { showMenu = false })
-                    DropdownMenuItem(text = { Text("수면/기상 관리") }, onClick = { showMenu = false; navigateWithConfirm(onNavigateToSleep) })
+                    DropdownMenuItem(text = { Text("홈") }, onClick = { showMenu = false; onNavigateToHome() })
+                    DropdownMenuItem(text = { Text("캘린더") }, onClick = { showMenu = false; onNavigateToCalendar() })
+                    DropdownMenuItem(text = { Text("집중 모드 (현재 화면)") }, onClick = { showMenu = false; }, enabled = false)
+                    DropdownMenuItem(text = { Text("수면/기상 관리") }, onClick = { showMenu = false; onNavigateToSleep() })
+                    DropdownMenuItem(text = { Text("설정") }, onClick = { showMenu = false; onNavigateToSettings() })
                 }
             }
-            Text("집중 모드", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("집중 모드", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Button(
                 onClick = {
                     if (timerState == TimerState.IDLE || timerState == TimerState.COMPLETED) viewModel.toggleMode()
@@ -212,20 +215,26 @@ fun FocusScreen(
                     if (focusMode == FocusMode.POMODORO) {
                         // [포모도로 설정 뷰]
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = if (isBadEnv) Color(0xFFFFF0F0) else Color(0xFFF0F8FF)),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isBadEnv) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
+                            ),
                             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = if (isBadEnv) "현재 집중하기 어려운 환경입니다." else "집중하기 좋은 환경입니다.",
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isBadEnv) Color.Red else MaterialTheme.colorScheme.primary
+                                    color = if (isBadEnv) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
                                 )
-                                Text("소음: ${currentDb.toInt()}dB / 밝기: ${currentLux.toInt()}lx", color = Color.Gray, fontSize = 14.sp)
+                                Text(
+                                    "소음: ${currentDb.toInt()}dB / 밝기: ${currentLux.toInt()}lx",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 14.sp
+                                )
                             }
                         }
 
-                        Text("집중할 시간: ${pomoDurationMins.toInt()}분", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("집중할 시간: ${pomoDurationMins.toInt()}분", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
                         Slider(
                             value = pomoDurationMins,
                             onValueChange = { viewModel.pomoDurationMins.value = it },
@@ -234,7 +243,7 @@ fun FocusScreen(
                             modifier = Modifier.padding(horizontal = 32.dp)
                         )
                         Spacer(modifier = Modifier.height(24.dp))
-                        Text("반복 횟수 (1사이클): $pomoTotalSessions 회", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("반복 횟수 (1사이클): $pomoTotalSessions 회", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
                         Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             (1..4).forEach { count ->
                                 FilterChip(
@@ -292,7 +301,7 @@ fun FocusScreen(
                     if (focusMode == FocusMode.POMODORO) {
                         Text("🎉 포모도로 사이클 완료! 🎉", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(16.dp))
-                        if (pomoTotalSessions == 4) Text("최대 사이클(4회)을 모두 완수했습니다.\n30분 이상 긴 휴식을 취해보세요.", textAlign = TextAlign.Center, color = Color.DarkGray)
+                        if (pomoTotalSessions == 4) Text("최대 사이클(4회)을 모두 완수했습니다.\n30분 이상 긴 휴식을 취해보세요.", textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         else Text("목표한 ${pomoTotalSessions}회 집중을 완료했습니다.", textAlign = TextAlign.Center)
                     } else {
                         Text("🎉 타이머 완료! 🎉", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)

@@ -1,14 +1,11 @@
 package com.davidots.planmind.ui.theme
 
-import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
+import androidx.compose.ui.graphics.Color
 
 // 라이트 모드 기반의 쿨톤 컬러 스킴 정의
 private val LightColorScheme = lightColorScheme(
@@ -21,14 +18,30 @@ private val LightColorScheme = lightColorScheme(
     onSurface = TextMain
 )
 
+private val DarkColorScheme = darkColorScheme(
+    primary = PrimaryBlue, // 포인트 컬러는 유지
+    onPrimary = Color.White,
+    secondary = SecondaryTeal,
+    background = Color(0xFF121212), // 어두운 배경색
+    surface = Color(0xFF1E1E1E),    // 카드 등 표면의 어두운 색
+    onBackground = Color.White,     // 어두운 배경 위에는 흰색 글씨
+    onSurface = Color.White
+)
+
 @Composable
 fun PlanMindTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    // 색상 스킴만 전달
+    // darkTheme 값에 따라 쓸 물감 세트(ColorScheme)를 다르게 결정
+    val colorScheme = if (darkTheme) {
+        DarkColorScheme
+    } else {
+        LightColorScheme
+    }
+
     MaterialTheme(
-        colorScheme = LightColorScheme,
+        colorScheme = colorScheme,
         typography = Typography,
         content = content
     )

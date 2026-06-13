@@ -440,9 +440,9 @@ fun ScheduleDetailScreen(
                 modifier = Modifier.fillMaxWidth().height(150.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                     disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = Color(0xFFE2E8F0),
+                    disabledBorderColor = if (!isTimeValid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant,
                     disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )

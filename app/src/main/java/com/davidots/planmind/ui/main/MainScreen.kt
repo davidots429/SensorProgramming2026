@@ -16,6 +16,8 @@ import com.davidots.planmind.ui.sleep.SleepScreen
 import com.davidots.planmind.ui.sleep.SleepViewModel
 import com.davidots.planmind.ui.schedule.ScheduleViewModel
 import com.davidots.planmind.ui.schedule.ScheduleDetailScreen
+import com.davidots.planmind.ui.settings.SettingsScreen
+import com.davidots.planmind.ui.settings.SettingsViewModel
 
 
 // 앱의 전체 화면 이동(Navigation)을 관리하는 최상위 UI 컨테이너
@@ -26,6 +28,7 @@ fun MainScreen(
     focusViewModel: FocusViewModel,
     sleepViewModel: SleepViewModel,
     scheduleViewModel: ScheduleViewModel,
+    settingsViewModel: SettingsViewModel,
     startDestination: String = "home",
     initialSleepState: SleepAlarmState = SleepAlarmState.IDLE
 ) {
@@ -43,6 +46,7 @@ fun MainScreen(
                 onNavigateToCalendar = { navController.navigate("calendar") },
                 onNavigateToFocus = { navController.navigate("focus") },
                 onNavigateToSleep = { navController.navigate("sleep") },
+                onNavigateToSettings = { navController.navigate("settings") }, // 추가
                 onNavigateToDetail = { dateString, scheduleId ->
                     val idToPass = scheduleId ?: -1
                     navController.navigate("detail/$dateString/$idToPass")
@@ -54,15 +58,11 @@ fun MainScreen(
         composable("calendar") {
             CalendarScreen(
                 viewModel = calendarViewModel,
-                onNavigateToFocus = {
-                    // 백스택에 화면이 쌓이지 않도록 단일 이동 처리
-                    navController.navigate("focus") { popUpTo("home") }
-                },
-                onNavigateToSleep = {
-                    navController.navigate("sleep") { popUpTo("home") }
-                },
+                onNavigateToHome = { navController.navigate("home") { popUpTo("home") { inclusive = true } } }, // 추가
+                onNavigateToFocus = { navController.navigate("focus") { popUpTo("home") } },
+                onNavigateToSleep = { navController.navigate("sleep") { popUpTo("home") } },
+                onNavigateToSettings = { navController.navigate("settings") { popUpTo("home") } }, // 추가
                 onNavigateToDetail = { dateString, scheduleId ->
-                    // id가 null(새로 추가)일 경우 -1을 전달하여 라우팅 경로를 만듬
                     val idToPass = scheduleId ?: -1
                     navController.navigate("detail/$dateString/$idToPass")
                 }
@@ -73,14 +73,10 @@ fun MainScreen(
         composable("focus") {
             FocusScreen(
                 viewModel = focusViewModel,
-                onNavigateToCalendar = {
-                    // 달력으로 돌아갈 때 백스택 초기화
-                    navController.navigate("calendar") { popUpTo("home") }
-                },
-                onNavigateToSleep = {
-                    navController.navigate("sleep") { popUpTo("home") }
-                },
-                onNavigateToHome = { navController.popBackStack() }
+                onNavigateToHome = { navController.navigate("home") { popUpTo("home") { inclusive = true } } }, // 기존 onNavigateToHome 수정
+                onNavigateToCalendar = { navController.navigate("calendar") { popUpTo("home") } },
+                onNavigateToSleep = { navController.navigate("sleep") { popUpTo("home") } },
+                onNavigateToSettings = { navController.navigate("settings") { popUpTo("home") } } // 추가
             )
         }
 
@@ -89,16 +85,25 @@ fun MainScreen(
             SleepScreen(
                 viewModel = sleepViewModel,
                 initialAlarmState = initialSleepState,
-                onNavigateToCalendar = {
-                    navController.navigate("calendar") { popUpTo("home") }
-                },
-                onNavigateToFocus = {
-                    navController.navigate("focus") { popUpTo("home") }
-                }
+                onNavigateToHome = { navController.navigate("home") { popUpTo("home") { inclusive = true } } }, // 추가
+                onNavigateToCalendar = { navController.navigate("calendar") { popUpTo("home") } },
+                onNavigateToFocus = { navController.navigate("focus") { popUpTo("home") } },
+                onNavigateToSettings = { navController.navigate("settings") { popUpTo("home") } } // 추가
             )
         }
 
-        // --- 4. 일정 상세/추가 화면 ---
+        // --- 4. 설정 화면 (새로 추가) ---
+        composable("settings") {
+            SettingsScreen(
+                viewModel = settingsViewModel,
+                onNavigateToHome = { navController.navigate("home") { popUpTo("home") { inclusive = true } } },
+                onNavigateToCalendar = { navController.navigate("calendar") { popUpTo("home") } },
+                onNavigateToFocus = { navController.navigate("focus") { popUpTo("home") } },
+                onNavigateToSleep = { navController.navigate("sleep") { popUpTo("home") } }
+            )
+        }
+
+        // --- 5. 일정 상세/추가 화면 ---
         // 경로에 변수({date}, {id})를 포함하여 데이터를 전달받음
         composable(
             route = "detail/{date}/{id}",

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +33,7 @@ fun HomeScreen(
     onNavigateToCalendar: () -> Unit,
     onNavigateToFocus: () -> Unit,
     onNavigateToSleep: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToDetail: (String, Int?) -> Unit
 ) {
     val today = remember { LocalDate.now() }
@@ -40,6 +42,9 @@ fun HomeScreen(
     // 캘린더 뷰모델에서 현재 달의 데이터를 관찰하여 오늘 날짜의 일정만 필터링
     val schedulesMap by calendarViewModel.schedulesByDate.collectAsState()
     val todaySchedules = schedulesMap[todayStr]?.sortedBy { it.startTime } ?: emptyList()
+
+    // 햄버거 메뉴 노출 여부 상태
+    var showMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(today) {
         calendarViewModel.updateDisplayedDate(today, ViewType.MONTHLY)
@@ -53,17 +58,44 @@ fun HomeScreen(
             .padding(16.dp)
     ) {
         // [1] 헤더 환영 인사
-        Text(
-            text = "안녕하세요, 범수님! 👋",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
-        )
-        Text(
-            text = "오늘도 알찬 하루를 계획해 볼까요?",
-            color = Color.Gray,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // 1. 햄버거 메뉴 아이콘 (왼쪽 정렬)
+            Box(
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.Menu, contentDescription = "메뉴", tint = MaterialTheme.colorScheme.primary)
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(text = { Text("홈 (현재 화면)") }, onClick = { showMenu = false }, enabled = false)
+                    DropdownMenuItem(text = { Text("캘린더") }, onClick = { showMenu = false; onNavigateToCalendar() })
+                    DropdownMenuItem(text = { Text("집중 모드") }, onClick = { showMenu = false; onNavigateToFocus() })
+                    DropdownMenuItem(text = { Text("수면/기상 관리") }, onClick = { showMenu = false; onNavigateToSleep() })
+                    DropdownMenuItem(text = { Text("설정") }, onClick = { showMenu = false; onNavigateToSettings() })
+                }
+            }
+
+            // 2. 환영 인사 (정중앙 정렬)
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally // 텍스트 문장들도 가운데 정렬
+            ) {
+                Text(
+                    text = "안녕하세요, 범수님! 👋",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp, top = 8.dp)
+                )
+                Text(
+                    text = "오늘도 알찬 하루를 계획해 볼까요?",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+            }
+        }
 
         // [2] 빠른 이동(네비게이션) 메뉴 카드들
         Row(
@@ -101,7 +133,7 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("오늘의 일정", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("오늘의 일정", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             IconButton(onClick = { onNavigateToDetail(todayStr, null) }) {
                 Icon(Icons.Default.Add, contentDescription = "일정 추가", tint = MaterialTheme.colorScheme.primary)
             }
@@ -112,7 +144,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Text("오늘 등록된 일정이 없습니다.", color = Color.Gray)
+                Text("오늘 등록된 일정이 없습니다.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(
