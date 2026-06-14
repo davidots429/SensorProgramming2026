@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 
 
 //수면 기록 관리 및 센서(조도, 만보기) 목표 달성 여부를 판별하는 수면 전용 뷰모델
@@ -86,9 +85,7 @@ class SleepViewModel(
             actualSleepTime ?: wakeTime.minusHours(7)
         }
 
-        // 자정을 넘긴 수면을 고려하여 분 단위로 총 수면 시간을 안전하게 계산
-        var durationMins = ChronoUnit.MINUTES.between(sleepTime, wakeTime).toInt()
-        if (durationMins < 0) durationMins += 24 * 60
+        var durationMins = SleepTimeUtil.getDurationMinutes(sleepTime, wakeTime)
 
         val newRecord = SleepRecordEntity(
             date = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),

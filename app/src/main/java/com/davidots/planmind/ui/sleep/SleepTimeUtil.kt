@@ -6,20 +6,26 @@ import java.time.temporal.ChronoUnit
 
 // 수면 시간 계산 및 적정성 판별 로직을 처리하는 유틸리티 객체
 object SleepTimeUtil {
+    // 시간 변환을 위한 포매터
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-    // "HH:mm" 문자열을 00:00 기준 누적 '분' 정수로 변환
-    fun timeToMins(t: String): Int {
-        val parts = t.split(":")
-        return if (parts.size == 2) parts[0].toInt() * 60 + parts[1].toInt() else 0
+    // 문자열("HH:mm")을 LocalTime 객체로 변환해 주는 함수
+    private fun parseTime(timeStr: String): LocalTime {
+        return LocalTime.parse(timeStr, timeFormatter)
     }
 
-    // 취침 시간과 기상 시간을 비교하여 총 수면 시간(분)을 계산 (자정 넘김 처리 포함)
-    fun calculateDurationMins(sleepTime: String, wakeTime: String): Int {
-        val sMins = timeToMins(sleepTime)
-        val wMins = timeToMins(wakeTime)
-        var duration = wMins - sMins
-        if (duration < 0) duration += 24 * 60
-        return duration
+    // 두 시간(시작점, 끝점) 사이의 차이를 '분' 단위로 계산해 주는 함수
+    fun getDurationMinutes(start: LocalTime, end: LocalTime): Int {
+        var durationMins = ChronoUnit.MINUTES.between(start, end).toInt()
+        if (durationMins < 0) {
+            durationMins += 24 * 60 // 자정을 넘긴 경우 24시간(1440분)을 더해줌
+        }
+        return durationMins
+    }
+
+    // 취침 시간과 기상 시간을 비교하여 총 수면 시간(분)을 계산
+    fun calculateDurationMins(sleepTimeStr: String, wakeTimeStr: String): Int {
+        return getDurationMinutes(parseTime(sleepTimeStr), parseTime(wakeTimeStr))
     }
 
     // 최소 수면 시간인 6시간(360분)을 충족하는지 판별
@@ -27,41 +33,34 @@ object SleepTimeUtil {
         return durationMins >= 6 * 60
     }
 
-    // Deep Sleep이 가능한 권장 취침 시간(저녁 6시 ~ 새벽 2시 사이)인지 판별
-    fun isGoodSleepTime(sleepTime: String): Boolean {
-        val sMins = timeToMins(sleepTime)
-        return sMins >= 18 * 60 || sMins <= 2 * 60
+    // Deep Sleep이 가능한 권장 취침 시간(저녁 6시 ~ 새벽 2시 이전)인지 판별
+    fun isGoodSleepTime(sleepTimeStr: String): Boolean {
+        // 복잡한 분(Mins) 계산 대신 LocalTime의 '시간(hour)' 속성을 직접 사용하여 직관성 극대화
+        val hour = parseTime(sleepTimeStr).hour
+        return hour !in 2..<18
     }
 
-    // 현재 시간이 "취침 예정 시간"과 "기상 예정 시간" 사이에 있는지 계산
-    fun isTimeInSleepWindow(nowTimeStr: String, sleepTimeStr: String, wakeTimeStr: String): Boolean {
-        val formatter = DateTimeFormatter.ofPattern("HH:mm")
-        val sleepTime = LocalTime.parse(sleepTimeStr, formatter)
-        val wakeTime = LocalTime.parse(wakeTimeStr, formatter)
-        val nowTime = LocalTime.parse(nowTimeStr, formatter)
-
-        var totalSleepMins = ChronoUnit.MINUTES.between(sleepTime, wakeTime).toInt()
-        if (totalSleepMins < 0) totalSleepMins += 24 * 60
-
-        var sleepToNowMins = ChronoUnit.MINUTES.between(sleepTime, nowTime).toInt()
-        if (sleepToNowMins < 0) sleepToNowMins += 24 * 60
-
-        return sleepToNowMins in 0 until totalSleepMins
-    }
-
-    // 실제 흐른 시간이 자야 할 시간을 넘겼는지 계산
+    // 현재 시간이 기상 시간을 넘겼는지 확인
     fun isWakeTimePassed(actualSleepStr: String, wakeTimeStr: String): Boolean {
-        val formatter = DateTimeFormatter.ofPattern("HH:mm")
-        val sleepTime = LocalTime.parse(actualSleepStr, formatter)
-        val wakeTime = LocalTime.parse(wakeTimeStr, formatter)
+        val sleepTime = parseTime(actualSleepStr)
+        val wakeTime = parseTime(wakeTimeStr)
         val nowTime = LocalTime.now()
 
-        var sleepToWakeMins = ChronoUnit.MINUTES.between(sleepTime, wakeTime).toInt()
-        if (sleepToWakeMins < 0) sleepToWakeMins += 24 * 60
-
-        var sleepToNowMins = ChronoUnit.MINUTES.between(sleepTime, nowTime).toInt()
-        if (sleepToNowMins < 0) sleepToNowMins += 24 * 60
+        val sleepToWakeMins = getDurationMinutes(sleepTime, wakeTime)
+        val sleepToNowMins = getDurationMinutes(sleepTime, nowTime)
 
         return sleepToNowMins >= sleepToWakeMins
+    }
+
+    // 현재 시간이 설정한 취침 시간과 기상 시간 사이에 있는지(수면 윈도우) 확인
+    fun isTimeInSleepWindow(nowTimeStr: String, sleepTimeStr: String, wakeTimeStr: String): Boolean {
+        val sleepTime = parseTime(sleepTimeStr)
+        val wakeTime = parseTime(wakeTimeStr)
+        val nowTime = parseTime(nowTimeStr)
+
+        val totalSleepMins = getDurationMinutes(sleepTime, wakeTime)
+        val sleepToNowMins = getDurationMinutes(sleepTime, nowTime)
+
+        return sleepToNowMins in 0 until totalSleepMins
     }
 }
