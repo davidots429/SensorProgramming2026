@@ -33,6 +33,22 @@ object SleepTimeUtil {
         return sMins >= 18 * 60 || sMins <= 2 * 60
     }
 
+    // 현재 시간이 "취침 예정 시간"과 "기상 예정 시간" 사이에 있는지 계산
+    fun isTimeInSleepWindow(nowTimeStr: String, sleepTimeStr: String, wakeTimeStr: String): Boolean {
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+        val sleepTime = LocalTime.parse(sleepTimeStr, formatter)
+        val wakeTime = LocalTime.parse(wakeTimeStr, formatter)
+        val nowTime = LocalTime.parse(nowTimeStr, formatter)
+
+        var totalSleepMins = ChronoUnit.MINUTES.between(sleepTime, wakeTime).toInt()
+        if (totalSleepMins < 0) totalSleepMins += 24 * 60
+
+        var sleepToNowMins = ChronoUnit.MINUTES.between(sleepTime, nowTime).toInt()
+        if (sleepToNowMins < 0) sleepToNowMins += 24 * 60
+
+        return sleepToNowMins in 0 until totalSleepMins
+    }
+
     // 실제 흐른 시간이 자야 할 시간을 넘겼는지 계산
     fun isWakeTimePassed(actualSleepStr: String, wakeTimeStr: String): Boolean {
         val formatter = DateTimeFormatter.ofPattern("HH:mm")

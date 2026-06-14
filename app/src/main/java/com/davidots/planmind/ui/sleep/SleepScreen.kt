@@ -76,6 +76,11 @@ fun SleepScreen(
             if (SleepTimeUtil.isWakeTimePassed(actualSleepStr, wakeTimeStr)) {
                 viewModel.setAlarmState(SleepAlarmState.WAKE_RINGING)
             }
+        } else if (actualSleepStr == null && alarmState == SleepAlarmState.IDLE) {
+            val nowStr = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+            if (SleepTimeUtil.isTimeInSleepWindow(nowStr, sleepTimeStr, wakeTimeStr)) {
+                viewModel.setAlarmState(SleepAlarmState.SLEEP_WAITING)
+            }
         }
     }
 
@@ -93,7 +98,7 @@ fun SleepScreen(
 
     // 앱 화면을 보고 있을 때 시간이 되면 즉시 뷰를 전환하기 위한 실시간 타이머
     var currentTimeStr by remember { mutableStateOf("") }
-    var lastTriggeredTime by remember { mutableStateOf("") } // 같은 분 내에 강제 종료 시 재실행 방지
+    var lastTriggeredTime by remember { mutableStateOf("") }
 
     LaunchedEffect(currentTimeStr, sleepTimeStr, wakeTimeStr) {
         if (alarmState == SleepAlarmState.IDLE && currentTimeStr != lastTriggeredTime) {
@@ -110,19 +115,11 @@ fun SleepScreen(
                     lastTriggeredTime = currentTimeStr
                     viewModel.setAlarmState(SleepAlarmState.WAKE_RINGING)
                 }
-            }
-        }
-    }
-
-    // 현재 시각이 설정한 취침/기상 시각과 일치하면 즉시 상태 전환
-    LaunchedEffect(currentTimeStr, sleepTimeStr, wakeTimeStr) {
-        if (alarmState == SleepAlarmState.IDLE && currentTimeStr != lastTriggeredTime) {
-            if (currentTimeStr == sleepTimeStr) {
-                lastTriggeredTime = currentTimeStr
-                viewModel.setAlarmState(SleepAlarmState.SLEEP_WAITING)
-            } else if (currentTimeStr == wakeTimeStr) {
-                lastTriggeredTime = currentTimeStr
-                viewModel.setAlarmState(SleepAlarmState.WAKE_RINGING)
+            } else {
+                if (SleepTimeUtil.isTimeInSleepWindow(currentTimeStr, sleepTimeStr, wakeTimeStr)) {
+                    lastTriggeredTime = currentTimeStr
+                    viewModel.setAlarmState(SleepAlarmState.SLEEP_WAITING)
+                }
             }
         }
     }
