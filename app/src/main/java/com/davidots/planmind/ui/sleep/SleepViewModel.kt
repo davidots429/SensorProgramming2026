@@ -1,5 +1,6 @@
 package com.davidots.planmind.ui.sleep
 
+import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.davidots.planmind.data.local.SleepRecordDao
@@ -53,30 +54,37 @@ class SleepViewModel(
     }
 
     // 조도 센서의 값을 업데이트하고, 취침 대기 상태일 때 불이 꺼졌는지(5 lux 이하) 판별
-    fun updateLux(lux: Float) {
+    fun updateLux(lux: Float, sharedPref: SharedPreferences) {
         _currentLux.value = lux
         if (_alarmState.value == SleepAlarmState.SLEEP_WAITING && lux <= 5f) {
             // [비즈니스 로직] 방이 충분히 어두워졌으므로 취침 시작으로 간주
-            actualSleepTime = LocalTime.now()
+            val now = LocalTime.now()
+            actualSleepTime = now
+            sharedPref.edit().putString("ACTUAL_SLEEP_TIME", now.format(DateTimeFormatter.ofPattern("HH:mm"))).apply()
             _alarmState.value = SleepAlarmState.IDLE
         }
     }
 
     // 걸음 수 센서의 값을 업데이트하고, 기상 상태일 때 10걸음을 달성했는지 판별
-    fun updateStepCount() {
+    fun updateStepCount(sharedPref: SharedPreferences) {
         if (_alarmState.value == SleepAlarmState.WAKE_RINGING) {
             _stepCount.value += 1
             if (_stepCount.value >= 10) {
                 // [비즈니스 로직] 10걸음 달성 시 기상 완료 처리 및 수면 시간 계산
-                handleWakeUpComplete()
+                handleWakeUpComplete(sharedPref)
             }
         }
     }
 
     // 10걸음 걷기 미션을 완수하여 알람이 꺼질 때, 최종 수면 기록을 DB에 저장
-    private fun handleWakeUpComplete() {
+    private fun handleWakeUpComplete(sharedPref: SharedPreferences) {
         val wakeTime = LocalTime.now()
-        val sleepTime = actualSleepTime ?: wakeTime.minusHours(7) // 취침 기록이 없다면 임의로 7시간 전으로 계산 (예외 처리)
+        val savedSleepTimeStr = sharedPref.getString("ACTUAL_SLEEP_TIME", null)
+        val sleepTime = if (savedSleepTimeStr != null) {
+            LocalTime.parse(savedSleepTimeStr, DateTimeFormatter.ofPattern("HH:mm"))
+        } else {
+            actualSleepTime ?: wakeTime.minusHours(7)
+        }
 
         // 자정을 넘긴 수면을 고려하여 분 단위로 총 수면 시간을 안전하게 계산
         var durationMins = ChronoUnit.MINUTES.between(sleepTime, wakeTime).toInt()
@@ -93,6 +101,7 @@ class SleepViewModel(
         viewModelScope.launch {
             sleepRecordDao.insertSleepRecord(newRecord)
             actualSleepTime = null
+            sharedPref.edit().remove("ACTUAL_SLEEP_TIME").apply()
             _alarmState.value = SleepAlarmState.IDLE
         }
     }

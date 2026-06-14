@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.davidots.planmind.receiver.AlarmHelper
 import com.davidots.planmind.ui.components.InlineWheelTimePicker
-import kotlinx.coroutines.delay
 
 @Composable
 fun SleepScreen(
@@ -61,20 +60,34 @@ fun SleepScreen(
     var isEditingSleepTime by remember { mutableStateOf(true) }
     var tempTimeStr by remember { mutableStateOf("") }
 
+    // 화면 진입 시점의 첫 실행을 무시하기 위한 상태 변수
+    var isInitialLaunch by remember { mutableStateOf(true) }
+
     // 화면 진입 시 보류 중인 미션(알림을 놓친 미션)이 있는지 검사하여 강제 소환
     LaunchedEffect(Unit) {
         val pendingMission = sharedPref.getString("PENDING_MISSION", null)
+        val actualSleepStr = sharedPref.getString("ACTUAL_SLEEP_TIME", null) // 우리가 저번에 만든 영구 저장 취침 시간
+
         if (pendingMission == "SLEEP" && alarmState == SleepAlarmState.IDLE) {
             viewModel.setAlarmState(SleepAlarmState.SLEEP_WAITING)
         } else if (pendingMission == "WAKE" && alarmState == SleepAlarmState.IDLE) {
             viewModel.setAlarmState(SleepAlarmState.WAKE_RINGING)
+        } else if (actualSleepStr != null && alarmState == SleepAlarmState.IDLE) {
+            if (SleepTimeUtil.isWakeTimePassed(actualSleepStr, wakeTimeStr)) {
+                viewModel.setAlarmState(SleepAlarmState.WAKE_RINGING)
+            }
         }
     }
 
     // 미션을 완료하거나 강제 종료하여 IDLE 상태가 되면 보류 표식을 지워버림
     LaunchedEffect(alarmState) {
-        if (alarmState == SleepAlarmState.IDLE) {
-            sharedPref.edit().remove("PENDING_MISSION").apply()
+        if (isInitialLaunch) {
+            isInitialLaunch = false
+        } else {
+            // 사용자가 실제로 미션을 완수하여 IDLE 상태로 변했을 때만 안전하게 지움
+            if (alarmState == SleepAlarmState.IDLE) {
+                sharedPref.edit().remove("PENDING_MISSION").apply()
+            }
         }
     }
 
@@ -82,11 +95,22 @@ fun SleepScreen(
     var currentTimeStr by remember { mutableStateOf("") }
     var lastTriggeredTime by remember { mutableStateOf("") } // 같은 분 내에 강제 종료 시 재실행 방지
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            val calendar = java.util.Calendar.getInstance()
-            currentTimeStr = String.format("%02d:%02d", calendar.get(java.util.Calendar.HOUR_OF_DAY), calendar.get(java.util.Calendar.MINUTE))
-            delay(1000L) // 1초마다 갱신하여 분 단위가 바뀌는 찰나를 정확히 캐치합니다.
+    LaunchedEffect(currentTimeStr, sleepTimeStr, wakeTimeStr) {
+        if (alarmState == SleepAlarmState.IDLE && currentTimeStr != lastTriggeredTime) {
+            val actualSleepStr = sharedPref.getString("ACTUAL_SLEEP_TIME", null)
+
+            if (currentTimeStr == sleepTimeStr) {
+                lastTriggeredTime = currentTimeStr
+                viewModel.setAlarmState(SleepAlarmState.SLEEP_WAITING)
+            } else if (currentTimeStr == wakeTimeStr) {
+                lastTriggeredTime = currentTimeStr
+                viewModel.setAlarmState(SleepAlarmState.WAKE_RINGING)
+            } else if (actualSleepStr != null) {
+                if (SleepTimeUtil.isWakeTimePassed(actualSleepStr, wakeTimeStr)) {
+                    lastTriggeredTime = currentTimeStr
+                    viewModel.setAlarmState(SleepAlarmState.WAKE_RINGING)
+                }
+            }
         }
     }
 
@@ -120,9 +144,9 @@ fun SleepScreen(
             override fun onSensorChanged(event: SensorEvent) {
                 // 센서 값을 읽어 뷰모델로 전송 (판단은 뷰모델이 함)
                 if (event.sensor.type == Sensor.TYPE_LIGHT) {
-                    viewModel.updateLux(event.values[0])
+                    viewModel.updateLux(event.values[0], sharedPref)
                 } else if (event.sensor.type == Sensor.TYPE_STEP_DETECTOR) {
-                    viewModel.updateStepCount()
+                    viewModel.updateStepCount(sharedPref)
                 }
             }
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}

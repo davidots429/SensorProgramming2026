@@ -3,6 +3,7 @@ package com.davidots.planmind.ui.settings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.davidots.planmind.data.local.AppDatabase
 import com.davidots.planmind.data.local.ThemeRepository
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -18,6 +19,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateTheme(newTheme: AppTheme) {
         viewModelScope.launch {
             themeRepository.setTheme(newTheme)
+        }
+    }
+
+    // 모든 수면 기록을 초기화하는 함수
+    fun deleteAllSleepRecords() {
+        viewModelScope.launch {
+            val db = AppDatabase.getDatabase(getApplication())
+            db.sleepRecordDao().deleteAllSleepRecords()
         }
     }
 }
